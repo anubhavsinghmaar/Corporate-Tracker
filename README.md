@@ -1,4 +1,4 @@
-# track-yo-shit in Corporate (DAKTracker)
+# track-yo-shit in Corporate
 
 > Rough notes → Structured insights for Product Managers.
 
