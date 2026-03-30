@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>track-yo-shit in Corporate — PM Dashboard</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  
+  <!-- Tailwind via CDN for local no-build execution -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            handwritten: ['Caveat', 'cursive'],
+          },
+          colors: {
+            surface: '#F8FAFC',
+            card: '#FFFFFF',
+            border: '#E2E8F0',
+            primary: '#0F172A',
+            secondary: '#64748B',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- SheetJS for Excel Reading -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-surface text-primary h-screen flex flex-col font-sans antialiased">
+  
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border shrink-0">
+    <div class="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3" y="3" width="7" height="18" rx="2" opacity="0.6" />
+            <rect x="13" y="3" width="7" height="12" rx="2" />
+          </svg>
+        </div>
+        <div class="flex flex-col -space-y-1.5 mt-1">
+          <span class="text-[26px] font-bold text-primary font-handwritten leading-none">track-yo-shit</span>
+          <span class="text-[11px] font-semibold tracking-wide text-secondary font-sans ml-1">in Corporate</span>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <p class="text-sm text-secondary hidden sm:block">Rough notes → Structured insights</p>
+        <button id="toggle-key-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-amber-50 text-amber-700 hover:bg-amber-100">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+          </svg>
+          <span id="key-btn-text">Set API Key</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- AI Key Panel -->
+    <div id="api-key-panel" class="hidden border-t border-border bg-slate-50 animate-fadeIn absolute w-full left-0 z-40 pb-2 shadow-sm">
+      <div class="max-w-[1600px] mx-auto px-6 pt-3 pb-2 flex items-center gap-3">
+        <input type="password" id="api-key-input" placeholder="Enter your Gemini API key..." class="flex-1 px-3 py-2 rounded-lg border border-border bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+        <button id="toggle-visibility-btn" class="p-2 rounded-lg hover:bg-white transition-colors text-secondary" title="Toggle visibility">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <button id="save-key-btn" class="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-indigo-500/25 transition-all">Save</button>
+      </div>
+      <p class="max-w-[1600px] mx-auto px-6 text-xs text-secondary">Stored locally in your browser. Only sent to Google AI for analysis.</p>
+    </div>
+  </header>
+
+  <!-- Upload Screen -->
+  <main id="upload-screen" class="flex-1 flex items-center justify-center p-6 overflow-y-auto min-h-0">
+    <div class="w-full max-w-2xl animate-fadeIn">
+      
+      <!-- Pre-Upload State -->
+      <div id="drop-zone-container" class="text-center">
+        <div class="mb-8">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mx-auto mb-4 scale-up">
+            <svg class="w-8 h-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-primary mb-2">Upload your Excel sheet to start tracking</h2>
+          <p class="text-secondary text-sm">Drop your .xlsx file to automatically track changes and generate AI insights</p>
+        </div>
+
+        <div id="drop-zone" class="border-2 border-dashed border-border rounded-2xl p-16 cursor-pointer bg-white transition-all hover:border-indigo-300 hover:bg-slate-50 group">
+          <input type="file" id="file-input" accept=".xlsx,.xls" class="hidden" />
+          
+          <div id="drop-zone-content">
+            <svg class="w-12 h-12 text-slate-300 mx-auto mb-4 group-hover:text-indigo-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p class="text-sm text-secondary mb-1">
+              <span class="text-indigo-500 font-semibold group-hover:text-indigo-600">Click to upload</span> or drag and drop
+            </p>
+            <p class="text-xs text-slate-400">.xlsx files supported</p>
+          </div>
+          
+          <div id="loading-spinner" class="hidden flex-col items-center gap-3">
+            <div class="w-10 h-10 spinner"></div>
+            <p class="text-sm text-secondary">Parsing Excel file...</p>
+          </div>
+        </div>
+
+        <div id="error-message" class="hidden mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600 animate-fadeIn"></div>
+      </div>
+
+      <!-- Preview State -->
+      <div id="preview-container" class="hidden animate-fadeIn">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-bold text-primary" id="preview-filename"></h3>
+            <p class="text-sm text-secondary" id="preview-counts"></p>
+          </div>
+          <button id="cancel-preview-btn" class="text-sm text-secondary hover:text-primary transition-colors">
+            ← Choose different file
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-border overflow-hidden shadow-sm mb-6">
+          <div class="overflow-x-auto max-h-[300px]">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 sticky top-0">
+                <tr id="preview-thead-row"></tr>
+              </thead>
+              <tbody id="preview-tbody"></tbody>
+            </table>
+          </div>
+          <div id="preview-footer" class="px-4 py-2 text-xs text-secondary bg-slate-50 border-t border-border"></div>
+        </div>
+
+        <button id="generate-ds-btn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50">
+          ⚡ Generate Dashboard
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Dashboard Screen -->
+  <main id="dashboard-screen" class="hidden flex-1 flex flex-col min-h-0 animate-fadeIn">
+    
+    <!-- Dashboard Toolbar -->
+    <div class="px-6 py-3 border-b border-border bg-white flex items-center justify-between gap-4 flex-wrap shrink-0">
+      <div class="flex items-center gap-4">
+        <p class="text-sm text-secondary" id="db-stats"></p>
+        <span id="rough-notes-badge" class="hidden text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium"></span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Progress Bar -->
+        <div id="ai-progress-container" class="hidden items-center gap-2 text-sm text-secondary">
+          <div class="w-3.5 h-3.5 spinner"></div>
+          <span id="ai-progress-text">Processing...</span>
+          <div class="w-28 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div id="ai-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-300 w-0"></div>
+          </div>
+        </div>
+
+        <span id="api-key-warning" class="hidden text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">Set API key to enable AI</span>
+        
+        <button id="run-ai-btn" class="hidden flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span id="run-ai-text">Run AI Analysis</span>
+        </button>
+
+        <button id="start-over-btn" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 text-slate-600 text-sm font-semibold hover:bg-slate-200 transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          Start Over
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Table Container -->
+    <div class="flex-1 min-h-0 overflow-auto relative w-full p-4 pb-12" id="table-scroll-area">
+      <div class="inline-block min-w-full bg-white rounded-xl shadow-sm border border-border">
+        <table class="w-full border-collapse text-sm">
+          <thead class="sticky top-0 z-20 bg-slate-50 border-b border-border shadow-sm">
+            <tr id="db-thead-row">
+              <!-- Rendered by JS -->
+            </tr>
+          </thead>
+          <tbody id="db-tbody">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
