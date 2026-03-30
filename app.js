@@ -1,7 +1,7 @@
-// DAK Tracker V2 (Vanilla JS Edition)
+// track-yo-shit (Vanilla JS Edition)
 
 const STATE = {
-  apiKey: localStorage.getItem('dak_tracker_gemini_key') || '',
+  apiKey: localStorage.getItem('track_yo_shit_gemini_key') || '',
   columns: [],
   rows: [],
   roughNotesCol: null,
@@ -9,7 +9,7 @@ const STATE = {
 };
 
 // IndexedDB Persistence Layer
-const DB_NAME = 'DakTrackerDB';
+const DB_NAME = 'TrackYoShitDB';
 const STORE_NAME = 'projectState';
 
 function openDB() {
@@ -99,8 +99,8 @@ el('toggle-visibility-btn').onclick = () => {
 el('save-key-btn').onclick = () => {
   const val = keyInput.value.trim();
   STATE.apiKey = val;
-  if (val) localStorage.setItem('dak_tracker_gemini_key', val);
-  else localStorage.removeItem('dak_tracker_gemini_key');
+  if (val) localStorage.setItem('track_yo_shit_gemini_key', val);
+  else localStorage.removeItem('track_yo_shit_gemini_key');
   
   keyBtnText.textContent = val ? 'API Key ✓' : 'Set API Key';
   el('toggle-key-btn').className = val 
